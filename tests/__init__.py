@@ -1,1 +1,1 @@
-"""Unit test package for bactopia_parser."""
+"""Unit test package for bactopia."""

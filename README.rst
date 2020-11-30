@@ -3,14 +3,14 @@ Bactopia Parser
 ===============
 
 
-.. image:: https://img.shields.io/pypi/v/bactopia_parser.svg
-        :target: https://pypi.python.org/pypi/bactopia_parser
+.. image:: https://img.shields.io/pypi/v/bactopia.svg
+        :target: https://pypi.python.org/pypi/bactopia
 
-.. image:: https://img.shields.io/travis/rpetit3/bactopia_parser.svg
-        :target: https://travis-ci.com/rpetit3/bactopia_parser
+.. image:: https://img.shields.io/travis/rpetit3/bactopia.svg
+        :target: https://travis-ci.com/rpetit3/bactopia
 
-.. image:: https://readthedocs.org/projects/bactopia-parser/badge/?version=latest
-        :target: https://bactopia-parser.readthedocs.io/en/latest/?badge=latest
+.. image:: https://readthedocs.org/projects/bactopia/badge/?version=latest
+        :target: https://bactopia.readthedocs.io/en/latest/?badge=latest
         :alt: Documentation Status
 
 
@@ -20,7 +20,7 @@ A Python package for parsing outputs produced by Bactopia.
 
 
 * Free software: MIT license
-* Documentation: https://bactopia-parser.readthedocs.io.
+* Documentation: https://bactopia.readthedocs.io.
 
 
 Features

@@ -1,15 +1,15 @@
 #!/usr/bin/env python
 
-"""Tests for `bactopia_parser` package."""
+"""Tests for `bactopia` package."""
 
 
 import unittest
 
-from bactopia_parser import bactopia_parser
+from bactopia import bactopia
 
 
 class TestBactopia_parser(unittest.TestCase):
-    """Tests for `bactopia_parser` package."""
+    """Tests for `bactopia` package."""
 
     def setUp(self):
         """Set up test fixtures, if any."""
