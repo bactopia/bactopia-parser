@@ -3,3 +3,4 @@
 __author__ = """Robert A. Petit III"""
 __email__ = 'robbie.petit@gmail.com'
 __version__ = '0.1.0'
+from .parse import parse
