@@ -12,13 +12,12 @@ def parse(r1, r2=None):
     if r1.endswith(".json"):
         if r2 and filetype != filetype2:
             raise ValueError(f"Original and Final QC files were mixed. R1: {filetype}, R2: {filetype2}")
-        return _parse_json(r1, r2, filetype.replace(".json", ""))
+        return _parse_json(r1, r2)
 
 
-def _parse_json(r1, r2, filetype):
+def _parse_json(r1, r2):
     """Return a dict of QC stats."""
-    jsondata = _merge_qc_stats(parse_json(r1), parse_json(r2)) if r2 else parse_json(r1)
-    return {filetype: jsondata}
+    return = _merge_qc_stats(parse_json(r1), parse_json(r2)) if r2 else parse_json(r1)
 
 
 def _merge_qc_stats(r1, r2):
