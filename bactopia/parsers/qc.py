@@ -3,7 +3,6 @@ ACCEPTED_FILES = ["final.json", "original.json"]
 
 
 def parse(r1, r2=None):
-    jsondata = None
     filetype = get_file_type(ACCEPTED_FILES, r1)
     filetype2 = filetype
     if r2:
@@ -17,7 +16,7 @@ def parse(r1, r2=None):
 
 def _parse_json(r1, r2):
     """Return a dict of QC stats."""
-    return = _merge_qc_stats(parse_json(r1), parse_json(r2)) if r2 else parse_json(r1)
+    return _merge_qc_stats(parse_json(r1), parse_json(r2)) if r2 else parse_json(r1)
 
 
 def _merge_qc_stats(r1, r2):
