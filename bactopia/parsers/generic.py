@@ -17,3 +17,9 @@ def parse_table(csvfile, delimiter='\t', has_header=True):
         for row in csv.DictReader(fh, delimiter=delimiter) if has_header else csv.reader(fh, delimiter=delimiter):
             data.append(row)
     return data
+
+def parse_json(jsonfile):
+    """Read a JSON file and return a dict."""
+    import json
+    with open(jsonfile, 'rt') as fh:
+        return json.load(fh)
