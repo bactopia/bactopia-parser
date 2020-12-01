@@ -2,6 +2,12 @@ from .generic import get_file_type
 ACCEPTED_FILES = [".txt"]
 
 
+def parse(filename):
+    filetype = get_file_type(ACCEPTED_FILES, filename)
+    if filetype == ".txt":
+        return _parse_annotation(filename)
+
+
 def _parse_annotation(filename):
     """Parse Prokka summary text file."""
     results = {}
@@ -11,9 +17,3 @@ def _parse_annotation(filename):
             key, val = line.split(":")
             results[key] = val.lstrip()
     return results
-
-
-def parse(filename):
-    filetype = get_file_type(ACCEPTED_FILES, filename)
-    if filetype == ".txt":
-        return _parse_annotation(filename)
