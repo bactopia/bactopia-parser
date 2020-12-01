@@ -1,8 +1,20 @@
+"""
+Parsers for Minmer related results.
+"""
 from .generic import get_file_type, parse_table
 ACCEPTED_FILES = ["refseq-k21.txt", "plsdb-k21.txt", "genbank-k21.txt", "genbank-k31.txt", "genbank-k51.txt"]
 
 
-def parse(filename, limit=None):
+def parse(filename: str) -> dict:
+    """
+    Check input file is an accepted file, then select the appropriate parsing method.
+
+    Args:
+        filename (str): input file to be parsed
+
+    Returns:
+        dict: parsed results
+    """
     filetype = get_file_type(ACCEPTED_FILES, filename)
     if filetype.startswith("genbank"):
         return _parse_sourmash(filename, limit)
@@ -10,20 +22,27 @@ def parse(filename, limit=None):
         return parse_table(filename)
 
 
-def _parse_sourmash(filename, limit):
+def _parse_sourmash(filename: str) -> dict:
     """
-    Parse Sourmash output. Example: 
+    Parse Sourmash output.
+    
+    Example Format:
+        overlap     p_query p_match
+        ---------   ------- --------
+        2.7 Mbp       7.3%   99.3%      Staphylococcus aureus (** 2 equal matches)
+        430.0 kbp     1.1%    0.5%      Tetrahymena thermophila
+        90.0 kbp      0.2%    0.1%      Paramecium tetraurelia
+        80.0 kbp      0.2%    2.7%      Staphylococcus aureus (** 8 equal matches)
+        80.0 kbp      0.2%    1.2%      Staphylococcus haemolyticus
+        10.0 kbp      0.0%    0.2%      Alcanivorax xenomutans
 
-    overlap     p_query p_match 
-    ---------   ------- --------
-    2.7 Mbp       7.3%   99.3%      Staphylococcus aureus (** 2 equal matches)
-    430.0 kbp     1.1%    0.5%      Tetrahymena thermophila
-    90.0 kbp      0.2%    0.1%      Paramecium tetraurelia
-    80.0 kbp      0.2%    2.7%      Staphylococcus aureus (** 8 equal matches)
-    80.0 kbp      0.2%    1.2%      Staphylococcus haemolyticus
-    10.0 kbp      0.0%    0.2%      Alcanivorax xenomutans
+        74.6% (28.0 Mbp) of hashes have no assignment.
 
-    74.6% (28.0 Mbp) of hashes have no assignment.
+    Args:
+        filename (str): input file to be parsed
+
+    Returns:
+        dict: the parsed Sourmash results
     """
     import re
     re_sourmash = re.compile(
@@ -31,11 +50,6 @@ def _parse_sourmash(filename, limit):
     )
     count = 0
     data = {"matches": [], "no_assignment": ""}
-    if limit:
-        data["limit"] = f"results are limited to the top {limit} matches"
-    else:
-        data["limit"] = "displaying full list of matches"
-
     with open(filename, "rt") as fh:
         parse_row = False
         parse_no_assignment = False
@@ -45,9 +59,6 @@ def _parse_sourmash(filename, limit):
                 data["no_assignment"] = line
             elif parse_row:
                 if line:
-                    if limit:
-                        if count >= limit:
-                            continue
                     re_match = re_sourmash.match(line)
                     data['matches'].append({
                         'overlap': re_match.group('overlap'),

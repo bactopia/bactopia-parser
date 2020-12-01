@@ -5,11 +5,26 @@ Example: bactopia.parse(result_type, filename)
 """
 import errno
 import os
+from typing import Union
 from . import parsers
 from .const import RESULT_TYPES
 
 
-def parse(result_type, *files):
+def parse(result_type: str, *files: str) -> Union[list, dict]:
+    """
+    Use the result type to automatically select the appropriate parsing method for an input.
+
+    Args:
+        result_type (str): the type of results (e.g. assembly, mlst, qc, etc...)
+        *files (str): one or more input files to be parsed
+
+    Raises:
+        FileNotFoundError: the input file could not be found
+        ValueError: the result type is not an accepted type
+
+    Returns:
+        Union[list, dict]: The results parsed for a given input.
+    """
     if result_type in RESULT_TYPES:
         for f in files:
             if not os.path.exists(f):

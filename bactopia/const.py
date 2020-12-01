@@ -1,3 +1,7 @@
+"""
+Constant values used throughout the Bactopia package.
+"""
+
 RESULT_TYPES = [
     "amr",
     "annotation",

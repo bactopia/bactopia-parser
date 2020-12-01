@@ -1,8 +1,24 @@
+"""
+Parsers for QC (FASTQ) related results.
+"""
 from .generic import get_file_type, parse_json
 ACCEPTED_FILES = ["final.json", "original.json"]
 
 
-def parse(r1, r2=None):
+def parse(r1: str, r2: str = None) -> dict:
+    """
+    Check input file is an accepted file, then select the appropriate parsing method.
+
+    Args:
+        r1 (str): input file associated with R1 or SE FASTQ
+        r2 (str, optional): input file associated with R2 FASTQ. Defaults to None.
+
+    Raises:
+        ValueError: summary results to not have a matching origin (e.g. original vs final FASTQ)
+
+    Returns:
+        dict: parsed results
+    """
     filetype = get_file_type(ACCEPTED_FILES, r1)
     filetype2 = filetype
     if r2:
@@ -11,15 +27,20 @@ def parse(r1, r2=None):
     if r1.endswith(".json"):
         if r2 and filetype != filetype2:
             raise ValueError(f"Original and Final QC files were mixed. R1: {filetype}, R2: {filetype2}")
-        return _parse_json(r1, r2)
+        return _merge_qc_stats(parse_json(r1), parse_json(r2)) if r2 else parse_json(r1)
 
 
-def _parse_json(r1, r2):
-    """Return a dict of QC stats."""
-    return _merge_qc_stats(parse_json(r1), parse_json(r2)) if r2 else parse_json(r1)
+def _merge_qc_stats(r1: dict, r2: dict) -> dict:
+    """
+    Merge appropriate metrics (e.g. coverage) for R1 and R2 FASTQs.
 
+    Args:
+        r1 (dict): parsed metrics associated with R1 FASTQ
+        r2 (dict): parsed metrics associated with R2 FASTQ
 
-def _merge_qc_stats(r1, r2):
+    Returns:
+        dict: the merged FASTQ metrics
+    """
     from statistics import mean
     merged = {
         'qc_stats': {},

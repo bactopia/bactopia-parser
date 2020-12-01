@@ -1,8 +1,20 @@
+"""
+Parsers for BLAST related results.
+"""
 from .generic import get_file_type, parse_json
 ACCEPTED_FILES = [".json", 'plsdb.txt']
 
 
-def parse(filename):
+def parse(filename: str) -> dict:
+    """
+    Check input file is an accepted file, then select the appropriate parsing method.
+
+    Args:
+        filename (str): input file to be parsed
+
+    Returns:
+        dict: parsed results
+    """
     filetype = get_file_type(ACCEPTED_FILES, filename)
     if filetype == ".json":
         return _parse_blast(parse_json(filename))
@@ -10,8 +22,16 @@ def parse(filename):
         return _parse_plsdb(filename)
 
 
-def _parse_blast(jsondata):
-    """Parse BLAST JSON output and clean it up."""
+def _parse_blast(jsondata: dict) -> dict:
+    """
+    Parse BLAST results and clean up final outputs.
+
+    Args:
+        jsondata (dict): the parsed BLAST results
+
+    Returns:
+        dict: BLAST results with reduced redundancy
+    """
     results = {"program": None, 'queries': {}}
     for row in jsondata['BlastOutput2']:
         report = row['report']
@@ -39,8 +59,16 @@ def _parse_blast(jsondata):
     return results
 
 
-def _parse_plsdb(filename):
-    """Cleanup PLSDB JSON, then use _parse_blast."""
+def _parse_plsdb(filename: str) -> dict:
+    """
+    Correct PLSDB JSON format then use _parse_blast.
+
+    Args:
+        filename (str): PLSDB BLAST results to be parsed
+
+    Returns:
+        dict: the results in correct format
+    """
     import json
     merged_json = None
     with open(filename, 'rt') as fh:
