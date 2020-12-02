@@ -2,6 +2,7 @@
 Parsers for QC (FASTQ) related results.
 """
 from .generic import get_file_type, parse_json
+RESULT_TYPE = 'quality-control'
 ACCEPTED_FILES = ["final.json", "original.json"]
 
 
@@ -57,3 +58,56 @@ def _merge_qc_stats(r1: dict, r2: dict) -> dict:
             merged['qc_stats'][key] = f'{val:.4f}' if isinstance(val, float) else val
 
     return merged
+
+
+def get_parsable_list(path: str, name: str) -> list:
+    """
+    Generate a list of parsable files.
+
+    Args:
+        path (str): a path to expected Bactopia results
+        name (str): the name of sample to test
+
+    Returns:
+        list: information about the status of parsable files
+    """
+    import os
+    parsable_results = []
+    for result in ACCEPTED_FILES:
+        result_name = None
+        filename = None
+        r1 = None
+        r2 = None
+        se = None
+
+        if result.endswith('original.json'):
+            result_name = 'original'
+            r1 = f"{path}/{name}/{RESULT_TYPE}/summary-original/{name}_R1-{result}"
+            r2 = f"{path}/{name}/{RESULT_TYPE}/summary-original/{name}_R2-{result}"
+            se = f"{path}/{name}/{RESULT_TYPE}/summary-original/{name}-{result}"
+        elif result.endswith('final.json'):
+            result_name = 'final'
+            r1 = f"{path}/{name}/{RESULT_TYPE}/summary-final/{name}_R1-{result}"
+            r2 = f"{path}/{name}/{RESULT_TYPE}/summary-final/{name}_R2-{result}"
+            se = f"{path}/{name}/{RESULT_TYPE}/summary-final/{name}-{result}"
+
+        if (se):
+            if os.path.exists(se):
+                parsable_results.append({
+                    'result_name': result_name,
+                    'files': [se],
+                    'optional': False,
+                    'missing': False
+                })
+            else:
+                missing = True
+                if os.path.exists(r1) and os.path.exists(r2):
+                    missing = False
+                parsable_results.append({
+                    'result_name': result_name,
+                    'files': [r1, r2],
+                    'optional': False,
+                    'missing': missing
+                })
+
+    return parsable_results

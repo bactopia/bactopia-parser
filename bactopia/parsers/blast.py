@@ -2,7 +2,8 @@
 Parsers for BLAST related results.
 """
 from .generic import get_file_type, parse_json
-ACCEPTED_FILES = [".json", 'plsdb.txt']
+RESULT_TYPE = 'blast'
+ACCEPTED_FILES = [".json", '-plsdb.json', 'plsdb.txt']
 
 
 def parse(filename: str) -> dict:
@@ -84,3 +85,50 @@ def _parse_plsdb(filename: str) -> dict:
                     merged_json = jsondata
                 entry.clear()
     return _parse_blast(merged_json)
+
+
+def get_parsable_list(path: str, name: str) -> list:
+    """
+    Generate a list of parsable files.
+
+    Args:
+        path (str): a path to expected Bactopia results
+        name (str): the name of sample to test
+
+    Returns:
+        list: information about the status of parsable files
+    """
+    import glob
+    import os
+    parsable_results = []
+    
+    # Check if PLSB results exist
+    blast_dir = f"{path}/{name}/{RESULT_TYPE}"
+    if os.path.exists(f"{blast_dir}/{name}-plsdb.txt"):
+        parsable_results.append({
+            'result_name': 'plsdb',
+            'files': [f"{blast_dir}/{name}-plsdb.txt"],
+            'optional': True,
+            'missing': False if os.path.exists(f"{blast_dir}/{name}-plsdb.txt") else True
+        })
+    else:
+        parsable_results.append({
+            'result_name': 'plsdb',
+            'files': [f"{blast_dir}/{name}-plsdb.json"],
+            'optional': True,
+            'missing': False if os.path.exists(f"{blast_dir}/{name}-plsdb.json") else True
+        })
+
+    for blast_type in ['genes', 'proteins', 'primers']:
+        blast_dir = f"{path}/{name}/{RESULT_TYPE}/{blast_type}"
+        if os.path.exists(blast_dir):
+            for blast_result in glob.glob(f'{blast_dir}/*.json'):
+                result_name = f"{blast_type}-{os.path.basename(blast_result)}"
+                parsable_results.append({
+                    'result_name': result_name,
+                    'files': [blast_result],
+                    'optional': True,
+                    'missing': False
+                })
+
+    return parsable_results

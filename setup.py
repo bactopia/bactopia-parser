@@ -19,7 +19,7 @@ test_requirements = [ ]
 setup(
     author="Robert A. Petit III",
     author_email='robbie.petit@gmail.com',
-    python_requires='>=3.5',
+    python_requires='>=3.6',
     classifiers=[
         'Development Status :: 2 - Pre-Alpha',
         'Intended Audience :: Developers',
@@ -30,7 +30,7 @@ setup(
         'Programming Language :: Python :: 3.7',
         'Programming Language :: Python :: 3.8',
     ],
-    description="A Python package for parsing outputs produced by Bactopia.",
+    description="A Python package for working with Bactopia results.",
     entry_points={
         'console_scripts': [
             'bactopia=bactopia.cli:main',

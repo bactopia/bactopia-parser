@@ -2,6 +2,7 @@
 Parsers for Mapping related results.
 """
 from .generic import get_file_type
+RESULT_TYPE = 'mapping'
 ACCEPTED_FILES = [".txt"]
 
 
@@ -63,3 +64,32 @@ def _parse_mapping(filename: str) -> list:
                 continue
         results.append({"name": name, "per_base_coverage": per_base_coverage})
     return results
+
+
+def get_parsable_list(path: str, name: str) -> list:
+    """
+    Generate a list of parsable files.
+
+    Args:
+        path (str): a path to expected Bactopia results
+        name (str): the name of sample to test
+
+    Returns:
+        list: information about the status of parsable files
+    """
+    import glob
+    import os
+    parsable_results = []
+
+    mapping_dir = f"{path}/{name}/{RESULT_TYPE}"
+    if os.path.exists(mapping_dir):
+        for mapping_stats in glob.glob(f'{mapping_dir}/*.txt'):
+            result_name = f"{os.path.basename(mapping_stats)}"
+            parsable_results.append({
+                'result_name': result_name,
+                'files': [mapping_stats],
+                'optional': True,
+                'missing': False
+            })
+
+    return parsable_results

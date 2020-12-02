@@ -2,6 +2,7 @@
 Parsers for Minmer related results.
 """
 from .generic import get_file_type, parse_table
+RESULT_TYPE = 'minmers'
 ACCEPTED_FILES = ["refseq-k21.txt", "plsdb-k21.txt", "genbank-k21.txt", "genbank-k31.txt", "genbank-k51.txt"]
 
 
@@ -72,3 +73,35 @@ def _parse_sourmash(filename: str) -> dict:
             elif line.startswith("----"):
                 parse_row = True
     return data
+
+
+def get_parsable_list(path: str, name: str) -> list:
+    """
+    Generate a list of parsable files.
+
+    Args:
+        path (str): a path to expected Bactopia results
+        name (str): the name of sample to test
+
+    Returns:
+        list: information about the status of parsable files
+    """
+    import os
+    parsable_results = []
+    for result in ACCEPTED_FILES:
+        result_name = None
+        optional = False
+        filename = None
+
+        if result.endswith('.txt'):
+            result_name = result.replace('.txt', '')
+            filename = f"{path}/{name}/{RESULT_TYPE}/{name}-{result}"
+
+        parsable_results.append({
+            'result_name': result_name,
+            'files': [filename],
+            'optional': True,
+            'missing': False if os.path.exists(filename) else True
+        })
+
+    return parsable_results

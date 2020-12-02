@@ -17,3 +17,5 @@ RESULT_TYPES = [
     "qc",
     "variants"
 ]
+
+IGNORE_LIST = ['.nextflow', '.nextflow.log', 'bactopia-info', 'work', 'bactopia-tools']

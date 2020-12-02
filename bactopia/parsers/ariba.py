@@ -2,6 +2,7 @@
 Parsers for Ariba related results.
 """
 from .generic import get_file_type, parse_json, parse_table
+RESULT_TYPE = 'ariba'
 ACCEPTED_FILES = ["report.tsv", "summary.csv"]
 
 
@@ -50,3 +51,37 @@ def _parse_ariba(report_file: str, summary_file: str) -> dict:
         summary.append(vals)
 
     return {'report': parse_table(report_file), 'summary': summary}
+
+
+def get_parsable_list(path: str, name: str) -> list:
+    """
+    Generate a list of parsable files.
+
+    Args:
+        path (str): a path to expected Bactopia results
+        name (str): the name of sample to test
+
+    Returns:
+        list: information about the status of parsable files
+    """
+    import os
+    parsable_results = []
+    
+    ariba_dir = f"{path}/{name}/{RESULT_TYPE}"
+    if os.path.exists(ariba_dir):
+        with os.scandir(ariba_dir) as dirs:
+            for ariba_db in dirs:
+                missing = True
+                report = f"{ariba_dir}/{ariba_db}/report.tsv"
+                summary = f"{ariba_dir}/{ariba_db}/summary.csv"
+                if os.path.exists(report) and os.path.exists(summary):
+                    missing = False
+
+                parsable_results.append({
+                    'result_name': ariba_db,
+                    'files': [report, summary],
+                    'optional': True,
+                    'missing': missing
+                })
+
+    return parsable_results

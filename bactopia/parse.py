@@ -33,3 +33,27 @@ def parse(result_type: str, *files: str) -> Union[list, dict]:
         return getattr(parsers, result_type).parse(*files)
     else:
         raise ValueError(f"'{result_type}' is not an accepted result type. Accepted types: {', '.join(RESULT_TYPES)}")
+
+
+def is_bactopia(path: str, name: str) -> list:
+    """
+    Check if a sample has any errors.
+
+    Args:
+        path (str): a path to expected Bactopia results
+        name (str): the name of sample to test
+
+    Returns:
+        list: 0 (bool): path looks like Bactopia, 1 (list): any errors found
+    """
+    from .parsers.error import ERROR_TYPES
+    errors = []
+    is_bactopia = os.path.exists(f"{path}/{name}/{name}-genome-size.txt"")
+
+    for error_type in ERROR_TYPES:
+        filename = f"{path}/{name}/{name}-{error_type}-error.txt"
+        if os.path.exists(filename):
+            is_bactopia = True
+            errors.append(parsers.error.parse(filename))
+
+    return [is_bactopia, errors]
