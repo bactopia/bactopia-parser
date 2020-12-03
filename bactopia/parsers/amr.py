@@ -18,7 +18,7 @@ def parse(filename: str) -> dict:
     """
     filetype = get_file_type(ACCEPTED_FILES, filename)
     if filetype.endswith("report.txt"):
-        return (filename)
+        return _parse_amrfinder_report(filename)
 
 
 def _parse_amrfinder_report(filename: str) -> dict:
