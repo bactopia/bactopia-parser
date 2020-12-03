@@ -17,7 +17,7 @@ def parse(filename: str) -> dict:
         dict: parsed results
     """
     filetype = get_file_type(ACCEPTED_FILES, filename)
-    if filetype == ".fna.json":
+    if filetype == "fna.json":
         return parse_json(filename)
     elif filetype.endswith("checkm-results.txt") or filetype.endswith("transposed_report.tsv"):
         return parse_table(filename)[0]

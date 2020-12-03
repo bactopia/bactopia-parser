@@ -18,7 +18,7 @@ def parse(filename: str) -> dict:
     """
     filetype = get_file_type(ACCEPTED_FILES, filename)
     if filetype.startswith("genbank"):
-        return _parse_sourmash(filename, limit)
+        return _parse_sourmash(filename)
     elif filetype == "refseq-k21.txt" or filetype == "plsdb-k21.txt":
         return parse_table(filename)
 
@@ -47,7 +47,7 @@ def _parse_sourmash(filename: str) -> dict:
     """
     import re
     re_sourmash = re.compile(
-        r'(?P<overlap>[0-9]+.[0-9]+ [A-Za-z]+)\s+(?P<p_query>[0-9].[0-9]+%)\s+(?P<p_match>[0-9]+.[0-9]+%)\s+(?P<match>.*)'
+        r'(?P<overlap>[0-9]+.[0-9]+ [A-Za-z]+)\s+(?P<p_query>[0-9]+.[0-9]+%)\s+(?P<p_match>[0-9]+.[0-9]+%)\s+(?P<match>.*)'
     )
     count = 0
     data = {"matches": [], "no_assignment": ""}
