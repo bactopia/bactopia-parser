@@ -72,13 +72,13 @@ def get_parsable_list(path: str, name: str) -> list:
         with os.scandir(ariba_dir) as dirs:
             for ariba_db in dirs:
                 missing = True
-                report = f"{ariba_dir}/{ariba_db}/report.tsv"
-                summary = f"{ariba_dir}/{ariba_db}/summary.csv"
+                report = f"{ariba_dir}/{ariba_db.name}/report.tsv"
+                summary = f"{ariba_dir}/{ariba_db.name}/summary.csv"
                 if os.path.exists(report) and os.path.exists(summary):
                     missing = False
 
                 parsable_results.append({
-                    'result_name': ariba_db,
+                    'result_name': ariba_db.name,
                     'files': [report, summary],
                     'optional': True,
                     'missing': missing

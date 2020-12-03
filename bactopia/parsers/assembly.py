@@ -48,7 +48,7 @@ def get_parsable_list(path: str, name: str) -> list:
             result_name = 'checkm'
             filename = f"{path}/{name}/{RESULT_TYPE}/checkm/{result}"
         elif result.endswith("transposed_report.tsv"):
-            result_name = 'checkm'
+            result_name = 'quast'
             filename = f"{path}/{name}/{RESULT_TYPE}/quast/{result}"
 
         parsable_results.append({

@@ -7,7 +7,7 @@ import errno
 import os
 from typing import Union
 from . import parsers
-from .const import RESULT_TYPES
+from .const import RESULT_TYPES, IGNORE_LIST
 
 
 def parse(result_type: str, *files: str) -> Union[list, dict]:
@@ -35,9 +35,9 @@ def parse(result_type: str, *files: str) -> Union[list, dict]:
         raise ValueError(f"'{result_type}' is not an accepted result type. Accepted types: {', '.join(RESULT_TYPES)}")
 
 
-def is_bactopia(path: str, name: str) -> list:
+def _is_bactopia_dir(path: str, name: str) -> list:
     """
-    Check if a sample has any errors.
+    Check if a directory contains Bactopia output and any errors.
 
     Args:
         path (str): a path to expected Bactopia results
@@ -48,7 +48,7 @@ def is_bactopia(path: str, name: str) -> list:
     """
     from .parsers.error import ERROR_TYPES
     errors = []
-    is_bactopia = os.path.exists(f"{path}/{name}/{name}-genome-size.txt"")
+    is_bactopia = os.path.exists(f"{path}/{name}/{name}-genome-size.txt")
 
     for error_type in ERROR_TYPES:
         filename = f"{path}/{name}/{name}-{error_type}-error.txt"
@@ -57,3 +57,44 @@ def is_bactopia(path: str, name: str) -> list:
             errors.append(parsers.error.parse(filename))
 
     return [is_bactopia, errors]
+
+
+def get_bactopia_files(path: str, name: str) -> dict:
+    """
+    Check if a sample has any errors.
+
+    Args:
+        path (str): a path to expected Bactopia results
+        name (str): the name of sample to test
+
+    Returns:
+        dict: path and info on all parsable Bactopia files
+    """
+    from collections import OrderedDict
+    is_bactopia, errors = _is_bactopia_dir(path, name)
+    bactopia_files = OrderedDict()
+    bactopia_files['has_errors'] = True if errors else False
+    bactopia_files['errors'] = errors
+    bactopia_files['ignored'] = False
+    bactopia_files['message'] = ""
+
+    if is_bactopia:
+        if not errors:
+            bactopia_files['genome_size'] = f"{path}/{name}/{name}-genome-size.txt"
+            for result_type in RESULT_TYPES:
+                result_key = result_type
+                if result_type == "amr":
+                    result_key = "antimicrobial_resistance"
+                elif result_type == "qc":
+                    result_key = "quality-control"
+
+                if result_type not in ['error', 'generic', 'kmers']:
+                    bactopia_files[result_key] = getattr(parsers, result_type).get_parsable_list(path, name)
+    else:
+        if name not in IGNORE_LIST:
+            raise ValueError(f"'{path}/{name}' is not a valid Bactopia directory.")
+        else:
+            bactopia_files['ignored'] = True
+            bactopia_files['message'] = f"'{path}/{name}' is on the Bactopia ignore list."
+
+    return bactopia_files

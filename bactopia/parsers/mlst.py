@@ -43,7 +43,7 @@ def get_parsable_list(path: str, name: str) -> list:
                 missing = True
                 blast = f"{mlst_dir}/{schema}/blast/blast.json"
                 parsable_results.append({
-                    'result_name': f"{schema}-blast}",
+                    'result_name': f"{schema}-blast",
                     'files': [blast],
                     'optional': True,
                     'missing': False if os.path.exists(blast) else True
@@ -51,7 +51,7 @@ def get_parsable_list(path: str, name: str) -> list:
 
                 ariba = f"{mlst_dir}/{schema}/ariba/mlst_report.tsv"
                 parsable_results.append({
-                    'result_name': f"{schema}-ariba}",
+                    'result_name': f"{schema}-ariba",
                     'files': [ariba],
                     'optional': True,
                     'missing': False if os.path.exists(ariba) else True
