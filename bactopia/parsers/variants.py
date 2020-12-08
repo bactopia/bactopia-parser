@@ -3,7 +3,7 @@ Parsers for Variant related results.
 """
 from .generic import get_file_type
 RESULT_TYPE = 'variants'
-ACCEPTED_FILES = [".txt"]
+ACCEPTED_FILES = ["txt"]
 
 
 def parse(filename: str) -> dict:
@@ -17,7 +17,7 @@ def parse(filename: str) -> dict:
         dict: parsed results
     """
     filetype = get_file_type(ACCEPTED_FILES, filename)
-    if filetype == ".txt":
+    if filetype == "txt":
         return _parse_variants(filename)
 
 
@@ -69,7 +69,7 @@ def get_parsable_list(path: str, name: str) -> list:
                         optional = True
                         filename = None
 
-                        if result.endswith('.txt'):
+                        if result.endswith('txt'):
                             result_name = 'stats'
                             filename = f"{reference_dir}/{name}.{result}"
 

@@ -3,7 +3,7 @@ Parsers for Annotation related results.
 """
 from .generic import get_file_type
 RESULT_TYPE = 'annotation'
-ACCEPTED_FILES = [".txt"]
+ACCEPTED_FILES = ["txt"]
 
 
 def parse(filename: str) -> dict:
@@ -17,7 +17,7 @@ def parse(filename: str) -> dict:
         dict: parsed results
     """
     filetype = get_file_type(ACCEPTED_FILES, filename)
-    if filetype == ".txt":
+    if filetype == "txt":
         return _parse_annotation(filename)
 
 
@@ -58,7 +58,7 @@ def get_parsable_list(path: str, name: str) -> list:
         optional = False
         filename = None
 
-        if result.endswith('.txt'):
+        if result.endswith('txt'):
             result_name = 'stats'
             filename = f"{path}/{name}/{RESULT_TYPE}/{name}.{result}"
 

@@ -60,6 +60,31 @@ def _merge_qc_stats(r1: dict, r2: dict) -> dict:
     return merged
 
 
+def is_paired(path: str, name: str) -> bool:
+    """
+    Check if in input sample had paired-end or single-end reads
+
+    Args:
+        path (str): a path to expected Bactopia results
+        name (str): the name of sample to test
+
+    Raises:
+        ValueError: Processed FASTQ(s) could not be found.
+
+    Returns:
+        bool: True: reads are paired, False: reads are single-end
+    """
+    r1 = f"{path}/{name}/quality-control/{name}_R1.fastq.gz"
+    r2 = f"{path}/{name}/quality-control/{name}_R2.fastq.gz"
+    se = f"{path}/{name}/quality-control/{name}.fastq.gz"
+    if os.path.exists(r1) and os.path.exists(r2):
+        return True
+    elif os.path.exists(se):
+        return False
+    else:
+        raise ValueError(f"Processed FASTQs not found in {path}/{name}/quality-control/")
+ 
+
 def get_parsable_list(path: str, name: str) -> list:
     """
     Generate a list of parsable files.
