@@ -43,20 +43,23 @@ def _parse_blast(jsondata: dict) -> dict:
             results['params'] = report['params']
 
         search = report['results']['search']
-        query_title = search['query_title']
-        if query_title not in results['queries']:
-            results['queries'][query_title] = {'query_len': search['query_len'], 'hits': [], 'message': ''}
+        query_id = search['query_id']
+        if query_id not in results['queries']:
+            results['queries'][query_id] = {'query_len': search['query_len'], 'hits': [], 'message': ''}
+
+        if 'query_title' in search:
+            results['queries'][query_id]['query_title'] = search['query_title'],
 
         if search['hits']:
             for hit in search['hits']:
-                results['queries'][query_title]['hits'].append({
+                results['queries'][query_id]['hits'].append({
                     'subject_title': hit['description'][0]['title'].split()[0],
                     'subject_len': hit['len'],
                     'hsps': hit['hsps']
                 })
         
         if 'message' in search:
-            results['queries'][query_title]['message'] = search['message']
+            results['queries'][query_id]['message'] = search['message']
     return results
 
 

@@ -10,11 +10,11 @@ with open('README.rst') as readme_file:
 with open('HISTORY.rst') as history_file:
     history = history_file.read()
 
-requirements = [ ]
+requirements = []
 
-setup_requirements = [ ]
+setup_requirements = []
 
-test_requirements = [ ]
+test_requirements = []
 
 setup(
     author="Robert A. Petit III",
@@ -33,7 +33,7 @@ setup(
     description="A Python package for working with Bactopia results.",
     entry_points={
         'console_scripts': [
-            'bactopia=bactopia.cli:main',
+            'bactopia-summary=bactopia.cli.summary:main',
         ],
     },
     install_requires=requirements,
@@ -42,11 +42,11 @@ setup(
     include_package_data=True,
     keywords='bactopia',
     name='bactopia',
-    packages=find_packages(include=['bactopia', 'bactopia.parsers']),
+    packages=find_packages(include=['bactopia', 'bactopia.parsers', 'bactopia.cli']),
     setup_requires=setup_requirements,
     test_suite='tests',
     tests_require=test_requirements,
     url='https://github.com/rpetit3/bactopia-py',
-    version='0.1.0',
+    version='0.1.2',
     zip_safe=False,
 )

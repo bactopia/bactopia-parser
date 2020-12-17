@@ -1,6 +1,7 @@
 """
 Parsers for QC (FASTQ) related results.
 """
+import os
 from .generic import get_file_type, parse_json
 RESULT_TYPE = 'quality-control'
 ACCEPTED_FILES = ["final.json", "original.json"]

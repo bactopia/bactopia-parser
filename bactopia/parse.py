@@ -36,6 +36,20 @@ def parse(result_type: str, *files: str) -> Union[list, dict]:
         raise ValueError(f"'{result_type}' is not an accepted result type. Accepted types: {', '.join(RESULT_TYPES)}")
 
 
+def parse_genome_size(gs_file: str) -> int:
+    """
+    Parse genome size from input file
+
+    Args:
+        gs_file (str): File containing the genome size of the sample
+
+    Returns:
+        int: genome size
+    """
+    with open(gs_file, 'rt') as gs_fh:
+        return int(gs_fh.readline().rstrip())
+
+
 def _is_bactopia_dir(path: str, name: str) -> list:
     """
     Check if a directory contains Bactopia output and any errors.
@@ -68,9 +82,6 @@ def get_bactopia_files(path: str, name: str) -> dict:
         path (str): a path to expected Bactopia results
         name (str): the name of sample to test
 
-    Raises:
-        ValueError: The given directory is not a valid Bactopia dir
-
     Returns:
         dict: path and info on all parsable Bactopia files
     """
@@ -85,7 +96,7 @@ def get_bactopia_files(path: str, name: str) -> dict:
 
     if is_bactopia:
         if not errors:
-            bactopia_files['genome_size'] = f"{path}/{name}/{name}-genome-size.txt"
+            bactopia_files['genome_size'] = parse_genome_size(f"{path}/{name}/{name}-genome-size.txt")
             for result_type in RESULT_TYPES:
                 result_key = result_type
                 if result_type == "amr":
@@ -96,10 +107,10 @@ def get_bactopia_files(path: str, name: str) -> dict:
                 if result_type not in ['error', 'generic', 'kmers']:
                     bactopia_files['files'][result_key] = getattr(parsers, result_type).get_parsable_list(path, name)
     else:
+        bactopia_files['ignored'] = True
         if name not in IGNORE_LIST:
-            raise ValueError(f"'{path}/{name}' is not a valid Bactopia directory.")
+            bactopia_files['message'] = f"'{path}/{name}' is does not look like Bactopia directory."
         else:
-            bactopia_files['ignored'] = True
             bactopia_files['message'] = f"'{path}/{name}' is on the Bactopia ignore list."
 
     return bactopia_files
@@ -118,16 +129,21 @@ def parse_bactopia_files(path: str, name: str) -> dict:
     """
     from bactopia.parsers.qc import is_paired
     bactopia_files = get_bactopia_files(path, name)
-    bactopia_results = OrderedDict()
-    bactopia_results['is_paired'] = None
-    bactopia_results['has_errors'] = bactopia_files['has_errors']
-    bactopia_results['errors'] = bactopia_files['errors']
-    bactopia_results['has_missing'] = False
-    bactopia_results['missing'] = []
-    bactopia_results['ignored'] = bactopia_files['ignored']
-    bactopia_results['message'] = bactopia_files['message']
-    bactopia_results['results'] = OrderedDict()
-    if not bactopia_files['has_errors'] and not bactopia_files['ignored']:
+    bactopia_results = OrderedDict((
+        ('sample', name),
+        ('genome_size', None),
+        ('is_paired', None),
+        ('has_errors', bactopia_files['has_errors']),
+        ('errors', bactopia_files['errors']),
+        ('has_missing', False),
+        ('missing', []),
+        ('ignored', bactopia_files['ignored']),
+        ('message', bactopia_files['message']),
+        ('results', OrderedDict())
+    ))
+
+    if not bactopia_results['has_errors'] and not bactopia_results['ignored']:
+        bactopia_results['genome_size'] = bactopia_files['genome_size']
         for result_type, results in bactopia_files['files'].items():
             bactopia_results['is_paired'] = is_paired(path, name)
             bactopia_results['results'][result_type] = OrderedDict()
@@ -150,7 +166,7 @@ def parse_bactopia_files(path: str, name: str) -> dict:
     return bactopia_results
 
 
-def parse_bactopia_directory(path: str) -> dict:
+def parse_bactopia_directory(path: str) -> list:
     """
     Scan a Bactopia directory and return parsed results.
 
@@ -158,47 +174,14 @@ def parse_bactopia_directory(path: str) -> dict:
         path (str):  a path to expected Bactopia results
 
     Returns:
-        dict: Parsed results for all samples in a Bactopia directory
+        list: Parsed results for all samples in a Bactopia directory
     """
-    from collections import defaultdict
-    COUNTS = defaultdict(int)
-    CATEGORIES = defaultdict(list)
-    results = OrderedDict((
-        ('categories', defaultdict(list)),
-        ('counts', defaultdict(int)),
-        ('samples', OrderedDict())
-    ))
+    results = []
 
     with os.scandir(path) as dirs:
         for directory in dirs:
-            if directory.name in IGNORE_LIST:
-                results['counts']['ignore-list'] += 1
-                results['categories']['ignore-list'].append(directory.name)
-            else:
-                sample_name = directory.name
-                sample = parse_bactopia_files(path, sample_name)
-                results['samples'][sample_name] = sample
-                results['counts']['total'] += 1
-                if sample['is_paired']:
-                    results['counts']['paired-end'] += 1
-                else:
-                    results['counts']['single-end'] += 1
+            if directory.name not in IGNORE_LIST:
+                sample = directory.name
+                results.append(parse_bactopia_files(path, sample))
 
-                if sample['has_errors']:
-                    for error in sample['errors']:
-                        results['counts'][error[0]] += 1
-                        FAILED[error[0]].append(sample_name)
-                    results['counts']['total-excluded'] += 1
-                    results['counts']['qc-failure'] += 1
-                    results['categories']['failed'].append([sample, f"Not processed, reason: {';'.join(sample['errors'])}"])
-                
-                if sample['has_missing']:
-                    results['counts']['missing'] += 1
-                    for missing in sample['missing']:
-                        CATEGORIES['missing'].append([sample_name, missing[0], f"Missing expected files: {','.join(missing[1])}"])
-
-                if not sample['has_errors'] and not sample['has_missing']:
-                    results['counts']['processed'] += 1
-                    results['categories']['processed'].append(sample_name)
-            
     return results

@@ -57,7 +57,6 @@ def _parse_mapping(filename: str) -> list:
                         per_base_coverage.clear()
                         name = None
                     name = line.replace("##", '')
-                    print(name)
                 else:
                     per_base_coverage.append(int(line))
             else:

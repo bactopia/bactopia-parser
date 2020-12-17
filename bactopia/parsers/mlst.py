@@ -39,9 +39,10 @@ def get_parsable_list(path: str, name: str) -> list:
     mlst_dir = f"{path}/{name}/{RESULT_TYPE}"
     if os.path.exists(mlst_dir):
         with os.scandir(mlst_dir) as dirs:
-            for schema in dirs:
+            for schema_dir in dirs:
+                schema = schema_dir.name
                 missing = True
-                blast = f"{mlst_dir}/{schema}/blast/blast.json"
+                blast = f"{mlst_dir}/{schema}/blast/{name}-blast.json"
                 parsable_results.append({
                     'result_name': f"{schema}-blast",
                     'files': [blast],

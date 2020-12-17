@@ -1,11 +1,92 @@
-import argparse
+import logging
 import os
+from collections import defaultdict
+import bactopia
+from bactopia.summary import get_rank, gather_results, print_failed, print_cutoffs
+from bactopia.parse import parse_bactopia_files
+from bactopia.const import IGNORE_LIST
 
-if __name__ == '__main__':
+PROGRAM = 'bactopia summary'
+VERSION = bactopia.__version__
+COUNTS = defaultdict(int)
+FAILED = defaultdict(list)
+CATEGORIES = defaultdict(list)
+STDOUT = 11
+STDERR = 12
+logging.addLevelName(STDOUT, "STDOUT")
+logging.addLevelName(STDERR, "STDERR")
+
+
+def process_errors(name: str, errors: list):
+    """
+    Process a set of errors.
+
+    Args:
+        name (str): the sample name
+        errors (list): Errors encountered during processing
+    """
+    error_msg = []
+    for error in errors:
+        error_msg.append(error[1])
+        COUNTS[error[0]] += 1
+        FAILED[error[0]].append(name)
+    COUNTS['total-excluded'] += 1
+    COUNTS['qc-failure'] += 1
+    CATEGORIES['failed'].append([name, f"Not processed, reason: {';'.join(error_msg)}"])
+    logging.debug(f"{name}\tNot processed, reason: {';'.join(error_msh)}")
+    return None
+
+
+def increment_and_append(key: str, name: str) -> None:
+    """
+    Increment COUNTS and append to CATEGORIES.
+
+    Args:
+        key (str): The key value to use
+        name (str): The value to append
+    """
+    COUNTS[key] += 1
+    CATEGORIES[key].append(name)
+
+
+def process_sample(sample: dict, rank_cutoff: dict) -> dict:
+    """
+    Process the results of a sample.
+
+    Args:
+        sample (dict): all the parsed results associated with a sample
+        rank_cutoff (dict): the set of cutoffs for each rank
+
+    Returns:
+        list: 0: the sample rank, [description]
+    """
+    logging.debug(f"\tWorking on {sample['sample']}")
+    qc = sample['results']['quality-control']['final']['qc_stats']
+    assembly = sample['results']['assembly']['stats']
+    rank, reason = get_rank(
+        rank_cutoff, qc['coverage'], qc['qual_mean'], qc['read_mean'],
+        assembly['total_contig'], sample['genome_size'], sample['is_paired']
+    )
+    increment_and_append('processed', sample['sample'])
+    increment_and_append(rank, sample['sample'])
+
+    if rank == 'exclude':
+        COUNTS['total-excluded'] += 1
+        FAILED['failed-cutoff'].append(sample)
+        CATEGORIES['failed'].append([sample, f'Failed to pass minimum cutoffs, reason: {reason}'])
+    else:
+        COUNTS['pass'] += 1
+
+    return gather_results(sample, rank, reason)
+
+
+def main():
     import argparse as ap
     import csv
+    import json
     import sys
     import textwrap
+
     parser = ap.ArgumentParser(
         prog=PROGRAM,
         conflict_handler='resolve',
@@ -13,7 +94,7 @@ if __name__ == '__main__':
         formatter_class=ap.RawDescriptionHelpFormatter,
         epilog=textwrap.dedent(f'''
             example usage:
-              {PROGRAM} bactopiadir outdir
+              {PROGRAM} BACTOPIA_DIRECTORY
         ''')
     )
 
@@ -83,12 +164,12 @@ if __name__ == '__main__':
     )
 
     group3.add_argument(
-        '--min_genome_size', metavar="FLOAT", type=float,
+        '--min_assembled_size', metavar="FLOAT", type=float,
         help='Minimum assembled genome size.'
     )
 
     group3.add_argument(
-        '--max_genome_size', metavar="FLOAT", type=float,
+        '--max_assembled_size', metavar="FLOAT", type=float,
         help='Maximum assembled genome size.'
     )
 
@@ -126,7 +207,7 @@ if __name__ == '__main__':
     # Setup logs
     FORMAT = '%(asctime)s:%(name)s:%(levelname)s - %(message)s'
     logging.basicConfig(format=FORMAT, datefmt='%Y-%m-%d %H:%M:%S',)
-    logging.getLogger().setLevel(set_log_level(args.silent, args.verbose))
+    logging.getLogger().setLevel(logging.ERROR if args.silent else logging.DEBUG if args.verbose else logging.INFO)
     RANK_CUTOFF = {
         'gold': {
             'coverage': args.gold_coverage,
@@ -146,103 +227,46 @@ if __name__ == '__main__':
             'length': args.min_read_length,
             'contigs': args.max_contigs
         },
-        'min-genome-size': args.min_genome_size,
-        'max-genome-size': args.max_genome_size
+        'min-assembled-size': args.min_assembled_size,
+        'max-assembled-size': args.max_assembled_size
     }
 
-    samples = {}
+    samples = []
+    fields = []
+    results = []
+    logging.debug(f"Working on {args.bactopia}...")
     with os.scandir(args.bactopia) as dirs:
         for directory in dirs:
-            if directory.name in IGNORE_LIST:
-                logging.debug(f"Ignoring {directory.name}")
-                COUNTS['ignore-list'] += 1
-                CATEGORIES['ignore-list'].append(directory.name)
-            else:
-                is_bactopia, has_error = check_bactopia(args.bactopia, directory.name)
-                if not is_bactopia:
-                    logging.debug(f"{directory.name} is not a Bactopia directory, ignoring...")
-                    COUNTS['ignore-unknown'] += 1
-                    CATEGORIES['ignore-unknown'].append(directory.name)
+            if directory.name not in IGNORE_LIST:
+                sample = parse_bactopia_files(args.bactopia, directory.name)
+                if sample['ignored']:
+                    logging.debug(f"{sample['sample']} is not a Bactopia directory, ignoring...")
+                    increment_and_append('ignore-unknown', sample['sample'])
                 else:
                     COUNTS['total'] += 1
-                    if has_error:
-                        logging.debug(f"{directory.name} {has_error} ")
-                        error_msg = []
-                        for error in has_error:
-                            error_type, error_name = parse_error(error)
-                            error_msg.append(error_name)
-                            COUNTS[error_type] += 1
-                            FAILED[error_type].append(directory.name)
-                        COUNTS['total-excluded'] += 1
-                        COUNTS['qc-failure'] += 1
-                        CATEGORIES['failed'].append([directory.name, f"Not processed, reason: {';'.join(error_msg)}"])
-                        samples[directory.name] = {'has_error': True, 'missing': []}
+                    if sample['has_errors']:
+                        process_errors(sample['sample'], sample['errors'])
                     else:
-                        logging.debug(f"{directory.name} found ")
-                        COUNTS['processed'] += 1
-                        CATEGORIES['processed'].append(directory.name)
-                        samples[directory.name] = get_files(args.bactopia, directory.name)
-
-    sample_stats = {}
-    stat_fields = []
-    for sample, val in samples.items():
-        if not val['has_error']:
-            end_type = val['end_type']
-            files = val['files']
-            missing = val['missing']
-            COUNTS[end_type] += 1
-            if missing:
-                COUNTS['missing'] += 1
-                CATEGORIES['failed'].append([sample, 'Missing expected files'])
-                logging.debug(f"{sample} missing files ")
-                logging.debug(f"{missing}")
-            else:
-                COUNTS['found'] += 1
-                stats = gather_stats(files, RANK_CUTOFF)
-                add_to_counts(stats)
-                COUNTS[stats['rank']] += 1
-                CATEGORIES[stats['rank']].append(sample)
-                if stats['rank'] == 'exclude':
-                    FAILED['failed-cutoff'].append(sample)
-                    CATEGORIES['failed'].append([sample, f'Failed to pass minimum cutoffs, reason: {stats["reason"]}'])
-                    COUNTS['total-excluded'] += 1
-                else:
-                    COUNTS['pass'] += 1
-                sample_stats[sample] = stats
-                for key in stats:
-                    if key not in stat_fields:
-                        stat_fields.append(key)
-
-    for key, val in COUNTS_BY_RANK.items():
-        coverage = int(mean(val['coverage'])) if val['coverage'] else 0
-        read_length = int(mean(val['read_mean'])) if val['read_mean'] else 0
-        quality = int(mean(val['qual_mean'])) if val['qual_mean'] else 0
-        contigs = int(mean(val['total_contig'])) if val['total_contig'] else 0
-        n50 = int(mean(val['n50_contig_length'])) if val['n50_contig_length'] else 0
+                        processed = process_sample(sample, RANK_CUTOFF)
+                        fields = list(dict.fromkeys(fields + list(processed.keys())))
+                        results.append(processed)
 
     # Write outputs
     outdir = args.outdir
     os.makedirs(outdir, exist_ok=True)
 
-    # HTML report
-    """
-    html_report = f'{outdir}/{args.prefix}-report.html'
-    with open(html_report, 'w') as html_fh:
-        html_fh.write(generate_html_report())
-    """
-
     # Tab-delimited report
     txt_report = f'{outdir}/{args.prefix}-report.txt'
     with open(txt_report, 'w') as txt_fh:
         outputs = []
-        for sample, stats in sorted(sample_stats.items()):
-            output = {'sample': sample}
-            for field in stat_fields:
-                if field in stats:
-                    if isinstance(stats[field], float):
-                        output[field] = f"{stats[field]:.3f}"
+        for result in results:
+            output = {}
+            for field in fields:
+                if field in result:
+                    if isinstance(result[field], float):
+                        output[field] = f"{result[field]:.3f}"
                     else:
-                        output[field] = stats[field]
+                        output[field] = result[field]
                 else:
                     output[field] = ""
             outputs.append(output)
@@ -269,7 +293,8 @@ if __name__ == '__main__':
                 exclude_fh.write(f'{name}\tqc-fail\t{reason}\n')
 
     # Screen report
-    with open(f'{outdir}/{args.prefix}-summary.txt', 'w') as summary_fh:
+    summary_report = f'{outdir}/{args.prefix}-summary.txt'
+    with open(summary_report, 'w') as summary_fh:
         summary_fh.write("Bactopia Summary Report\n")
         summary_fh.write(textwrap.dedent(f'''
             Total Samples: {len(samples)}
@@ -278,16 +303,40 @@ if __name__ == '__main__':
                 Gold: {COUNTS["gold"]}
                 Silver: {COUNTS["silver"]}
                 Bronze: {COUNTS["bronze"]}
+
             Excluded: {COUNTS["total-excluded"]}
                 Failed Cutoff: {COUNTS["exclude"]}\n'''))
         summary_fh.write(print_cutoffs(cutoff_counts))
-        summary_fh.write('\n')
         summary_fh.write(f'    QC Failure: {COUNTS["qc-failure"]}\n')
         summary_fh.write(print_failed(FAILED))
-        summary_fh.write(textwrap.dedent(f'''\n
+        summary_fh.write(textwrap.dedent(f'''
             Reports:
                 Full Report (txt): {txt_report}
                 Exclusion: {exclusion_report}
-            Rank Cutoffs:\n'''))
-        summary_fh.write(json.dumps(RANK_CUTOFF, indent=4))
-        summary_fh.write('\n')
+                Summary: {summary_report}
+
+            Rank Cutoffs:
+                Gold:
+                    Coverage >= {RANK_CUTOFF['gold']['coverage']}x
+                    Quality >= Q{RANK_CUTOFF['gold']['quality']}
+                    Read Length >= {RANK_CUTOFF['gold']['length']}bp
+                    Total Contigs < {RANK_CUTOFF['gold']['contigs']}
+                Silver:
+                    Coverage >= {RANK_CUTOFF['silver']['coverage']}x
+                    Quality >= Q{RANK_CUTOFF['silver']['quality']}
+                    Read Length >= {RANK_CUTOFF['silver']['length']}bp
+                    Total Contigs < {RANK_CUTOFF['silver']['contigs']}
+                Bronze:
+                    Coverage >= {RANK_CUTOFF['bronze']['coverage']}x
+                    Quality >= Q{RANK_CUTOFF['bronze']['quality']}
+                    Read Length >= {RANK_CUTOFF['bronze']['length']}bp
+                    Total Contigs < {RANK_CUTOFF['bronze']['contigs']}
+            
+            Assembly Length Exclusions:
+                Minimum: {RANK_CUTOFF['min-assembled-size']}
+                Maximum: {RANK_CUTOFF['min-assembled-size']}
+        '''))
+
+
+if __name__ == '__main__':
+    main()
