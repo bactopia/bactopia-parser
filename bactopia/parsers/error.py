@@ -25,6 +25,7 @@ def parse(filename: str) -> dict:
         list: observed error and a brief description
     """
     filetype = get_file_type(ACCEPTED_FILES, filename)
+    error = filename
 
     if error.endswith("genome-size-error.txt"):
         return _format_error(["genome-size-error", "Poor estimate of genome size"])

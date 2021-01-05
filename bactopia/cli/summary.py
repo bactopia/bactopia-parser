@@ -17,23 +17,23 @@ logging.addLevelName(STDOUT, "STDOUT")
 logging.addLevelName(STDERR, "STDERR")
 
 
-def process_errors(name: str, errors: list):
+def process_errors(name: str, errors: dict):
     """
     Process a set of errors.
 
     Args:
         name (str): the sample name
-        errors (list): Errors encountered during processing
+        errors (dict): Errors encountered during processing (keys: 'error_type', 'description')
     """
     error_msg = []
     for error in errors:
-        error_msg.append(error[1])
-        COUNTS[error[0]] += 1
-        FAILED[error[0]].append(name)
+        error_msg.append(error['description'])
+        COUNTS[error['error_type']] += 1
+        FAILED[error['error_type']].append(name)
     COUNTS['total-excluded'] += 1
     COUNTS['qc-failure'] += 1
     CATEGORIES['failed'].append([name, f"Not processed, reason: {';'.join(error_msg)}"])
-    logging.debug(f"{name}\tNot processed, reason: {';'.join(error_msh)}")
+    logging.debug(f"{name}\tNot processed, reason: {';'.join(error_msg)}")
     return None
 
 
@@ -72,8 +72,8 @@ def process_sample(sample: dict, rank_cutoff: dict) -> dict:
 
     if rank == 'exclude':
         COUNTS['total-excluded'] += 1
-        FAILED['failed-cutoff'].append(sample)
-        CATEGORIES['failed'].append([sample, f'Failed to pass minimum cutoffs, reason: {reason}'])
+        FAILED['failed-cutoff'].append(sample['sample'])
+        CATEGORIES['failed'].append([sample['sample'], f'Failed to pass minimum cutoffs, reason: {reason}'])
     else:
         COUNTS['pass'] += 1
 
@@ -231,7 +231,7 @@ def main():
         'max-assembled-size': args.max_assembled_size
     }
 
-    samples = []
+    processed_samples = {}
     fields = []
     results = []
     logging.debug(f"Working on {args.bactopia}...")
@@ -250,6 +250,7 @@ def main():
                         processed = process_sample(sample, RANK_CUTOFF)
                         fields = list(dict.fromkeys(fields + list(processed.keys())))
                         results.append(processed)
+                        processed_samples[sample['sample']] = True
 
     # Write outputs
     outdir = args.outdir
@@ -282,7 +283,7 @@ def main():
     with open(exclusion_report, 'w') as exclude_fh:
         exclude_fh.write('sample\tstatus\treason\n')
         for name, reason in CATEGORIES['failed']:
-            if name in sample_stats:
+            if name in processed_samples:
                 reasons = reason.split(':')[1].split(';')
                 cutoffs = []
                 for r in reasons:
@@ -297,7 +298,7 @@ def main():
     with open(summary_report, 'w') as summary_fh:
         summary_fh.write("Bactopia Summary Report\n")
         summary_fh.write(textwrap.dedent(f'''
-            Total Samples: {len(samples)}
+            Total Samples: {COUNTS['total']}
             
             Passed: {COUNTS["pass"]}
                 Gold: {COUNTS["gold"]}
