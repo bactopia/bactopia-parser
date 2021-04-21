@@ -4,7 +4,7 @@ Parsers for Error related results.
 from .generic import get_file_type, parse_json, parse_table
 ACCEPTED_FILES = ["error.txt"]
 ERROR_TYPES = [
-    "assembly"
+    "assembly",
     "different-read-count",
     "genome-size",
     "low-read-count",

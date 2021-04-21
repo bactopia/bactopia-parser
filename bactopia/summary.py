@@ -201,10 +201,17 @@ def _add_minmers(minmers: dict) -> dict:
             if len(minmers[key]):
                 if key.startswith('genbank'):
                     # Sourmash keys: "overlap", "p_query", "p_match", "match"
-                    results[f'{prefix}_match'] = minmers[key]['matches'][0]['match'].split("(")[0].rstrip()
-                    results[f'{prefix}_overlap'] = minmers[key]['matches'][0]['overlap']
-                    results[f'{prefix}_p_query'] = minmers[key]['matches'][0]['p_query']
-                    results[f'{prefix}_p_match'] = minmers[key]['matches'][0]['p_match']
+                    if minmers[key]['matches']:
+                        results[f'{prefix}_match'] = minmers[key]['matches'][0]['match'].split("(")[0].rstrip()
+                        results[f'{prefix}_overlap'] = minmers[key]['matches'][0]['overlap']
+                        results[f'{prefix}_p_query'] = minmers[key]['matches'][0]['p_query']
+                        results[f'{prefix}_p_match'] = minmers[key]['matches'][0]['p_match']
+                    else:
+                        results[f'{prefix}_match'] = None
+                        results[f'{prefix}_overlap'] = None
+                        results[f'{prefix}_p_query'] = None
+                        results[f'{prefix}_p_match'] = None
+
                     results[f'{prefix}_no_assignment'] = minmers[key]['no_assignment']
                     results[f'{prefix}_total'] = len(minmers[key]['matches'])
                     

@@ -33,7 +33,7 @@ def process_errors(name: str, errors: dict):
     COUNTS['total-excluded'] += 1
     COUNTS['qc-failure'] += 1
     CATEGORIES['failed'].append([name, f"Not processed, reason: {';'.join(error_msg)}"])
-    logging.debug(f"{name}\tNot processed, reason: {';'.join(error_msg)}")
+    logging.debug(f"\t{name}: Not processed, reason: {';'.join(error_msg)}")
     return None
 
 
@@ -60,7 +60,6 @@ def process_sample(sample: dict, rank_cutoff: dict) -> dict:
     Returns:
         list: 0: the sample rank, [description]
     """
-    logging.debug(f"\tWorking on {sample['sample']}")
     qc = sample['results']['quality-control']['final']['qc_stats']
     assembly = sample['results']['assembly']['stats']
     rank, reason = get_rank(
@@ -236,11 +235,12 @@ def main():
     results = []
     logging.debug(f"Working on {args.bactopia}...")
     with os.scandir(args.bactopia) as dirs:
-        for directory in dirs:
+        for i, directory in enumerate(dirs):
             if directory.name not in IGNORE_LIST:
+                logging.debug(f"Working on {directory.name} ({i+1})")
                 sample = parse_bactopia_files(args.bactopia, directory.name)
                 if sample['ignored']:
-                    logging.debug(f"{sample['sample']} is not a Bactopia directory, ignoring...")
+                    logging.debug(f"\t{sample['sample']} is not a Bactopia directory, ignoring...")
                     increment_and_append('ignore-unknown', sample['sample'])
                 else:
                     COUNTS['total'] += 1
@@ -271,11 +271,11 @@ def main():
                 else:
                     output[field] = ""
             outputs.append(output)
-
-        writer = csv.DictWriter(txt_fh, fieldnames=outputs[0].keys(), delimiter='\t')
-        writer.writeheader()
-        for row in outputs:
-            writer.writerow(row)
+        if outputs:
+            writer = csv.DictWriter(txt_fh, fieldnames=outputs[0].keys(), delimiter='\t')
+            writer.writeheader()
+            for row in outputs:
+                writer.writerow(row)
 
     # Exclusion report
     exclusion_report = f'{outdir}/{args.prefix}-exclude.txt'

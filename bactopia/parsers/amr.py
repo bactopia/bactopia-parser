@@ -2,7 +2,7 @@
 Parsers for Antimicrobial Resistance related results.
 """
 from .generic import get_file_type, parse_table
-RESULT_TYPE = 'antimicrobial_resistance'
+RESULT_TYPE = 'antimicrobial-resistance'
 ACCEPTED_FILES = ["gene-report.txt", "protein-report.txt"]
 
 

@@ -100,7 +100,7 @@ def get_bactopia_files(path: str, name: str) -> dict:
             for result_type in RESULT_TYPES:
                 result_key = result_type
                 if result_type == "amr":
-                    result_key = "antimicrobial_resistance"
+                    result_key = "antimicrobial-resistance"
                 elif result_type == "qc":
                     result_key = "quality-control"
 
@@ -148,7 +148,7 @@ def parse_bactopia_files(path: str, name: str) -> dict:
             bactopia_results['is_paired'] = is_paired(path, name)
             bactopia_results['results'][result_type] = OrderedDict()
             result_key = result_type
-            if result_type == "antimicrobial_resistance":
+            if result_type == "-_resistance":
                 result_key = "amr"
             elif result_type == "quality-control":
                 result_key = "qc"

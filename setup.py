@@ -34,6 +34,7 @@ setup(
     entry_points={
         'console_scripts': [
             'bactopia-summary=bactopia.cli.summary:main',
+            'bactopia-jsonify=bactopia.cli.jsonify:main',
         ],
     },
     install_requires=requirements,
